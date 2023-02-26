@@ -1,10 +1,10 @@
 package client
 
 import (
+	"bytes"
 	"crypto/hmac"
 	"crypto/sha1"
 	b64 "encoding/base64"
-	"fmt"
 	"math/rand"
 	"net/url"
 	"strconv"
@@ -26,8 +26,13 @@ const (
 	oauthNonceKey           = "oauth_nonce"
 	oauthVersionKey         = "oauth_version"
 	oauthSignatureKey       = "oauth_signature"
-	oAuthKey                = "OAuth "
 	statusKey               = "status"
+	oAuthKey                = "OAuth "
+)
+
+const (
+	comaChar  = ","
+	ampersand = "&"
 )
 
 type authHandler struct {
@@ -63,15 +68,20 @@ func (a authHandler) CreateAuthorizationString(s SignatureRequest) string {
 	authorizationValues := [authKeysLength]string{s.key, s.token, a.oAuthSignatureMethod,
 		oauthTimestamp, base64OauthNonce, a.oAuthVersion, signature}
 
-	authStr := oAuthKey
+	var buffer bytes.Buffer
+
+	buffer.WriteString(oAuthKey)
 	for iter, key := range a.authKeys {
-		authStr += url.QueryEscape(key) + "=\"" + url.QueryEscape(authorizationValues[iter]) + "\""
+		buffer.WriteString(url.QueryEscape(key))
+		buffer.WriteString("=\"")
+		buffer.WriteString(url.QueryEscape(authorizationValues[iter]))
+		buffer.WriteString("\"")
 		if iter != authKeysLength-1 {
-			authStr += ","
+			buffer.WriteString(comaChar)
 		}
 	}
 
-	return authStr
+	return buffer.String()
 }
 
 func createTimestamp() string {
@@ -96,11 +106,25 @@ func (a authHandler) createSignature(s SignatureRequest, base64OauthNonce, oauth
 		s.params.Add(statusKey, s.body) // request body (POST method)
 	}
 
-	escapedStr := fmt.Sprintf("%s&%s&%s", s.method, url.QueryEscape(s.url), url.QueryEscape(s.params.Encode()))
-	signingKey := fmt.Sprintf("%s&%s", url.QueryEscape(s.secret), url.QueryEscape(s.accessSecret))
+	escapedStr := generateStringWithParams(s.method, url.QueryEscape(s.url), url.QueryEscape(s.params.Encode()))
+	signingKey := generateStringWithParams(url.QueryEscape(s.secret), url.QueryEscape(s.accessSecret))
+
 	signature := makeSignature(escapedStr, signingKey)
 
 	return signature
+}
+
+func generateStringWithParams(params ...string) string {
+	var buffer bytes.Buffer
+
+	for i, param := range params {
+		buffer.WriteString(param)
+		if i != len(params)-1 {
+			buffer.WriteString(ampersand)
+		}
+	}
+
+	return buffer.String()
 }
 
 // makeSignature - create final value by passing the signature base string and signing key

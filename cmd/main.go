@@ -14,7 +14,7 @@ import (
 
 type worker struct {
 	c *client.API
-	l *zerolog.Logger
+	logger *zerolog.Logger
 }
 
 func main() {
@@ -25,7 +25,7 @@ func main() {
 
 	w := worker{
 		c: c,
-		l: makeLogger(),
+		logger: makeLogger(),
 	}
 
 	w.process()
@@ -33,11 +33,11 @@ func main() {
 
 func (w worker) process() {
 	for _, v := range w.c.AdAccounts {
-		w.l.Info().Str("account", v.AdAccountName).Msg("start process account")
+		w.logger.Info().Str("account", v.AdAccountName).Msg("start process account")
 
 		err := w.processAccount(v.AdAccountID, v.AdAccountName)
 		if err != nil {
-			w.l.Info().Str("account", v.AdAccountName).Msg("can't process account")
+			w.logger.Info().Str("account", v.AdAccountName).Msg("can't process account")
 		}
 	}
 }
@@ -61,7 +61,7 @@ func (w worker) processAccount(accountID, accountName string) error {
 	}
 
 	if len(activeEntities.Data) == 0 {
-		w.l.Info().Str("account", accountName).Msg("no data for selected account, skipping")
+		w.logger.Info().Str("account", accountName).Msg("no data for selected account, skipping")
 
 		return nil
 	}
@@ -74,7 +74,7 @@ func (w worker) processAccount(accountID, accountName string) error {
 
 		if len(stats.Data) == 0 || len(stats.Data[0].IDData) == 0 ||
 			len(stats.Data[0].IDData[0].Metrics.BilledChargeLocalMicro) == 0 {
-			w.l.Info().Str("account", accountName).Msg("no stats data for selected account, skipping")
+			w.logger.Info().Str("account", accountName).Msg("no stats data for selected account, skipping")
 
 			continue
 		}
@@ -92,7 +92,7 @@ func (w worker) processAccount(accountID, accountName string) error {
 			Currency:  campaign.Data.Currency,
 		}
 
-		w.l.Info().Interface("spend entity", spend).Msg("processed")
+		w.logger.Info().Interface("spend entity", spend).Msg("processed")
 	}
 
 	return nil
@@ -104,7 +104,7 @@ func makeConfig() *client.Config {
 		APISecret:    os.Getenv("TWITTER_API_SECRET"),
 		AccessToken:  os.Getenv("TWITTER_ACCESS_TOKEN"),
 		AccessSecret: os.Getenv("TWITTER_ACCESS_SECRET"),
-		AdAccounts: []client.TwitterAcc{
+		AdAccounts: []client.TwitterAccount{
 			{
 				AdAccountName: os.Getenv("TWITTER_AD_ACCOUNT_NAME"),
 				AdAccountID:   os.Getenv("TWITTER_AD_ACCOUNT_ID"),

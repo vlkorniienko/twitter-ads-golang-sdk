@@ -37,7 +37,7 @@ type API struct {
 
 func NewAPIClient(conf *Config) (*API, error) {
 	if err := conf.Validate(); err != nil {
-		return nil, fmt.Errorf("not enough fields")
+		return nil, fmt.Errorf("not enough fields: %w", err)
 	}
 
 	return &API{

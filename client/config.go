@@ -2,7 +2,7 @@ package client
 
 import "errors"
 
-type TwitterAcc struct {
+type TwitterAccount struct {
 	AdAccountName string
 	AdAccountID   string
 }
@@ -12,7 +12,7 @@ type Config struct {
 	APISecret    string
 	AccessToken  string
 	AccessSecret string
-	AdAccounts   []TwitterAcc
+	AdAccounts   []TwitterAccount
 }
 
 var ErrNotValidConfig = errors.New("config is not valid")
